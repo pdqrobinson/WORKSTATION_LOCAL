@@ -1,0 +1,41 @@
+{
+  "header": "STEP_1_ALIGNMENT_PAYLOAD",
+  "meta": {
+    "project_id": "20260201-AI-WORKSTATION-9c73",
+    "step_id": "1-20260201-AI-WORKSTATION-9c73-01",
+    "complexity": "High",
+    "timestamp": "2026-02-01T19:25:00Z"
+  },
+  "project_files": {
+    "PRD": "1-20260201-AI-WORKSTATION-9c73-01-PRD.md",
+    "STATE": "1-20260201-AI-WORKSTATION-9c73-01-SYSTEM_STATE.md",
+    "PAYLOAD": "1-20260201-AI-WORKSTATION-9c73-01-PAYLOAD.json"
+  },
+  "dna": {
+    "goal": "Build a full-screen AI workstation for non-technical users with natural language and speech as the primary interface, using a tiled UI (Golden Layout), Tauri framework, and hybrid AI (local Ollama + cloud BYOK for GLM 4.7)",
+    "context": "Bridge the gap between non-technical users and computer operations by providing an AI chat operator that can execute tasks, manage files, browse the web, and perform system operations with safe constraints",
+    "constraints": [
+      "Rust language",
+      "Tauri framework with web renderer",
+      "Golden Layout JavaScript for tiled UI",
+      "Linux (primary), then Windows, macOS",
+      "Ollama for local AI (small model optimized for tool calls)",
+      "BYOK for cloud AI tuned for GLM 4.7",
+      "Write access limited to user directories",
+      "System operations exposed via controlled APIs",
+      "Speech-to-text for hands-free operation",
+      "WYSIWYG text editor",
+      "Embedded web browser for in-app browsing",
+      "Rust-based file system viewer",
+      "Archive.org Downloader integration (Python3 script for book downloads)",
+      "YouTube Downloader (yt-dlp) integration",
+      "Memos (usememos.com) integration"
+    ],
+    "resolved_ambiguities": [
+      "Local AI implementation: Ollama with small model optimized for tool calls",
+      "Permission/sandboxing: Write access limited to user directories; system operations via controlled APIs",
+      "UI implementation: Tauri + Golden Layout JavaScript + embedded web view for browsing"
+    ]
+  },
+  "status": "READY_FOR_STEP_2_ENCODING"
+}

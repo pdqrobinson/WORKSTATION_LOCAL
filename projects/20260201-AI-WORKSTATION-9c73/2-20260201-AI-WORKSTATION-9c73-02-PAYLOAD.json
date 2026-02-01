@@ -1,0 +1,46 @@
+{
+  "header": "STEP_2_ENCODING_PAYLOAD",
+  "meta": {
+    "project_id": "20260201-AI-WORKSTATION-9c73",
+    "step_id": "2-20260201-AI-WORKSTATION-9c73-02",
+    "task_name": "AI Workstation Technical Blueprint",
+    "complexity": "High"
+  },
+  "architecture": {
+    "state_management": "Service-based with Tauri IPC - Source of Truth: Rust Backend",
+    "components_services": [
+      "Frontend Tiles (Golden Layout): ChatTile, ContentTile, BrowserTile, FileSystemTile, EditorTile, DownloadsTile, MemosTile, TerminalTile",
+      "Backend Services (Rust): FileSystemService, SystemService, AIRouterService, DownloadService, MemosService, STTService, ConfigService"
+    ],
+    "data_structures": {
+      "interfaces": [
+        "AppConfig: Application configuration with AI, Archive.org, Memos, and UI settings",
+        "AIConfig: Local and cloud AI model configuration",
+        "ChatMessage: Chat message structure with role and timestamp",
+        "ToolCall/ToolResult: AI tool invocation and execution",
+        "FileEntry/FileOperationRequest: File system operations",
+        "DownloadTask/DownloadType/DownloadStatus: Download management",
+        "Memo/MemoSearch: Memos note structure and search",
+        "SystemOperationRequest: System operations (wallpaper, processes, commands)"
+      ],
+      "schemas": [
+        "Rust: Config, ChatMessage, FileEntry, DownloadTask, Memo, SystemOperation",
+        "TypeScript: Mirror of Rust structures for frontend",
+        "Golden Layout: Tile component registry and layout configuration"
+      ]
+    },
+    "dependencies": [
+      "Tauri 2.0 (Application Framework)",
+      "Golden Layout 2.6.0 (Tiled UI)",
+      "React 18.2.0 (Frontend UI)",
+      "Ollama (Local AI Runtime - External)",
+      "GLM 4.7 (Cloud AI - BYOK)",
+      "yt-dlp (YouTube Downloader - Python)",
+      "Archive.org Downloader (Python)",
+      "Memos (Self-hosted Notes - Docker)",
+      "Rust crates: serde, tokio, chrono, dirs, walkdir, reqwest"
+    ]
+  },
+  "logic_map": "User Input (Speech/Text) → STT → ChatTile → Tauri IPC → Rust Backend Intent Classifier → Local AI (Ollama) or Cloud AI (GLM 4.7) → Tool Execution (File, System, Download, Memos, UI) → Rust → Tauri IPC → Frontend Updates. All UI components are Golden Layout tiles within full-screen container. Single-service architecture with 6 backend modules managing all operations safely within constrained access patterns.",
+  "status": "READY_FOR_STEP_3_GATING"
+}
