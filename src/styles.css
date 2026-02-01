@@ -45,6 +45,37 @@ body {
   flex-wrap: wrap;
 }
 
+.webbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.webbar-input {
+  width: 240px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #f6f2ea;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.webbar-input::placeholder {
+  color: rgba(246, 242, 234, 0.6);
+}
+
+.webbar-go {
+  border: none;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #f5b942;
+  color: #111111;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .top-bar button {
   border: none;
   padding: 8px 14px;
@@ -108,52 +139,6 @@ body {
   height: 100%;
   overflow: auto;
   padding: 12px;
-}
-
-.web-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  height: 100%;
-}
-
-.web-toolbar {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.web-address {
-  flex: 1;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-family: inherit;
-  font-size: 14px;
-}
-
-.web-go {
-  border: none;
-  padding: 10px 16px;
-  border-radius: 999px;
-  background: #111111;
-  color: #f6f2ea;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.web-frame {
-  flex: 1;
-  border-radius: 16px;
-  overflow: hidden;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  background: #ffffff;
-}
-
-.web-frame iframe {
-  border: none;
-  width: 100%;
-  height: 100%;
 }
 
 .yazi-panel {

@@ -2,8 +2,7 @@
  * Runtime detection + lazy loading for the platform abstraction.
  *
  * Checks `window.__TAURI_INTERNALS__` to decide which backend to use.
- * Uses dynamic `import()` so Vite code-splits the Tauri chunk — it is
- * never loaded in web mode.
+ * Uses dynamic `import()` so the Tauri chunk is only loaded when needed.
  */
 
 import type { Platform } from "./types.ts";

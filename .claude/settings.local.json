@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree:*)",
+      "Bash(wc:*)",
+      "Bash(npx vite build)",
+      "Bash(npx --package=vite@5.4.8 vite build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm install)"
+    ]
+  }
+}

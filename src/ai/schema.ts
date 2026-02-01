@@ -1,6 +1,5 @@
 export type WindowType =
   | "ai"
-  | "web"
   | "doc"
   | "editor"
   | "terminal"
@@ -50,7 +49,6 @@ export const isWindowType = (value: unknown): value is WindowType =>
   typeof value === "string" &&
   [
     "ai",
-    "web",
     "doc",
     "editor",
     "terminal",

@@ -8,7 +8,6 @@ import { VaultPanel } from "../vault/VaultPanel";
 import { VaultDoc, VaultIndexEntry } from "../vault/vault";
 import { YaziPanel } from "../terminal/YaziPanel";
 import { TerminalPanel } from "../terminal/TerminalPanel";
-import { WebPanel } from "../web/WebPanel";
 
 interface GoldenLayoutSurfaceProps {
   windows: WindowRecord[];
@@ -44,6 +43,7 @@ type WindowComponentProps = WindowComponentState & {
 };
 
 const WindowRenderer: React.FC<WindowComponentProps> = ({
+  id,
   type,
   title,
   content,
@@ -106,13 +106,6 @@ const WindowRenderer: React.FC<WindowComponentProps> = ({
     );
   }
 
-  if (type === "web") {
-    return (
-      <div className="gl-pane">
-        <WebPanel initialUrl={content} />
-      </div>
-    );
-  }
 
   if (type === "memos") {
     return (
@@ -256,7 +249,6 @@ export const GoldenLayoutSurface: React.FC<GoldenLayoutSurfaceProps> = ({
     register("ai");
     register("vault");
     register("doc");
-    register("web");
     register("editor");
     register("terminal");
     register("chart");

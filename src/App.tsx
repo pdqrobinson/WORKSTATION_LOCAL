@@ -9,6 +9,21 @@ import { VaultDoc, VaultIndexEntry } from "./vault/vault";
 import { platform } from "./platform/index.ts";
 
 const MAX_HISTORY = 5;
+const WEBVIEW_LABEL_PREFIX = "web-";
+
+const normalizeUrl = (value: string): string => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return "https://example.com";
+  }
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+};
+
+const isTauriRuntime = (): boolean =>
+  typeof window !== "undefined" && !!(window as any).__TAURI_INTERNALS__;
 
 const App: React.FC = () => {
   const [windows, setWindows] = useState(() => createInitialWindows());
@@ -18,6 +33,7 @@ const App: React.FC = () => {
   const [output, setOutput] = useState<CommandEnvelope | null>(null);
   const [notes, setNotes] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [webAddress, setWebAddress] = useState<string>("");
   const [recentCommands, setRecentCommands] = useState<
     Array<{ action: string; windowId?: string }>
   >([]);
@@ -108,6 +124,19 @@ const App: React.FC = () => {
     }
   };
 
+  const handleOpenWeb = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const next = normalizeUrl(webAddress);
+    setWebAddress(next);
+    if (!isTauriRuntime()) {
+      window.open(next, "_blank", "noopener,noreferrer");
+      return;
+    }
+    const { WebviewWindow } = await import("@tauri-apps/api/webviewWindow");
+    const label = `${WEBVIEW_LABEL_PREFIX}${Date.now()}`;
+    new WebviewWindow(label, { url: next });
+  };
+
   const aiProps = useMemo(
     () => ({
       prompt,
@@ -134,13 +163,23 @@ const App: React.FC = () => {
       <div className="top-bar">
         <div className="brand">AI Workstation</div>
         <div className="actions">
+          <form className="webbar" onSubmit={handleOpenWeb}>
+            <input
+              className="webbar-input"
+              value={webAddress}
+              onChange={(event) => setWebAddress(event.target.value)}
+              placeholder="Open website..."
+            />
+            <button className="webbar-go" type="submit">
+              Open
+            </button>
+          </form>
           <button onClick={handleWorkspaceChange}>Workspace</button>
           <button onClick={() => handleAddWindow("vault")}>+ Vault</button>
           <button onClick={() => handleAddWindow("ai")}>+ AI</button>
           <button onClick={() => handleAddWindow("yazi")}>+ Yazi</button>
           <button onClick={() => handleAddWindow("terminal")}>+ Terminal</button>
           <button onClick={() => handleAddWindow("doc")}>+ Doc</button>
-          <button onClick={() => handleAddWindow("web")}>+ Web</button>
           <button onClick={() => handleAddWindow("editor")}>+ Editor</button>
         </div>
       </div>

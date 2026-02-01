@@ -30,7 +30,7 @@ Output ONLY valid JSON following this schema:
     {
       "action": "create_window|update_window|focus_window|close_window|list_windows|write_to_window|reflow_layout",
       "windowId": "string?",
-      "windowType": "ai|web|doc|editor|terminal|chart|data|vault|yazi?",
+      "windowType": "ai|doc|editor|terminal|chart|data|vault|yazi?",
       "title": "string?",
       "payload": { "any": "object" }
     }
