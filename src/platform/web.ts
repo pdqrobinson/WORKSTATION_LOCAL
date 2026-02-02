@@ -107,6 +107,10 @@ export const webPlatform: Platform = {
     return "/appdata";
   },
 
+  async getHomeDir(): Promise<string> {
+    return "/home";
+  },
+
   async joinPath(...parts: string[]): Promise<string> {
     return joinPosix(...parts);
   },

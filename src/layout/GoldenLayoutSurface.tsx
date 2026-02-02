@@ -2,12 +2,15 @@ import React, { useEffect, useMemo, useRef } from "react";
 import ReactDOM from "react-dom/client";
 import { GoldenLayout, LayoutConfig, ComponentContainer } from "golden-layout";
 import { WindowRecord } from "../ai/commands";
+import { AiBackend } from "../ai/ollama";
 import { WindowType } from "../ai/schema";
 import { AiPanel } from "../ai/AiPanel";
 import { VaultPanel } from "../vault/VaultPanel";
 import { VaultDoc, VaultIndexEntry } from "../vault/vault";
 import { YaziPanel } from "../terminal/YaziPanel";
 import { TerminalPanel } from "../terminal/TerminalPanel";
+import { FileTreePanel } from "../filesystem/FileTreePanel";
+import { DocPanel } from "../doc/DocPanel";
 
 interface GoldenLayoutSurfaceProps {
   windows: WindowRecord[];
@@ -20,6 +23,12 @@ interface GoldenLayoutSurfaceProps {
     error: string | null;
     notes: string[];
     output: any;
+    backend: AiBackend;
+    model: string;
+    onBackendChange: (backend: AiBackend) => void;
+    onModelChange: (model: string) => void;
+    onOpenFile: (path: string) => void;
+    onContentChange: (windowId: string, html: string) => void;
   };
   vault: {
     onIndexChange: (index: VaultIndexEntry[]) => void;
@@ -49,7 +58,7 @@ const WindowRenderer: React.FC<WindowComponentProps> = ({
   content,
   ai,
   vault,
-  workspaceRoot
+  workspaceRoot,
 }) => {
   if (type === "ai") {
     return (
@@ -62,6 +71,10 @@ const WindowRenderer: React.FC<WindowComponentProps> = ({
           error={ai.error}
           notes={ai.notes}
           output={ai.output}
+          backend={ai.backend}
+          model={ai.model}
+          onBackendChange={ai.onBackendChange}
+          onModelChange={ai.onModelChange}
         />
       </div>
     );
@@ -106,7 +119,6 @@ const WindowRenderer: React.FC<WindowComponentProps> = ({
     );
   }
 
-
   if (type === "memos") {
     return (
       <div className="gl-pane">
@@ -121,10 +133,19 @@ const WindowRenderer: React.FC<WindowComponentProps> = ({
   if (type === "filesystem") {
     return (
       <div className="gl-pane">
-        <div className="panel">
-          <h2>File System</h2>
-          <p style={{ opacity: 0.7 }}>Tree/list file browser — coming soon</p>
-        </div>
+        <FileTreePanel onOpenFile={ai.onOpenFile} />
+      </div>
+    );
+  }
+
+  if (type === "doc") {
+    return (
+      <div className="gl-pane">
+        <DocPanel
+          content={content}
+          title={title}
+          onContentChange={(html) => ai.onContentChange(id, html)}
+        />
       </div>
     );
   }
@@ -145,7 +166,7 @@ const WindowRenderer: React.FC<WindowComponentProps> = ({
       <div className="panel">
         <h2>{title}</h2>
         <p style={{ opacity: 0.7 }}>{type}</p>
-        {content && <pre className="ai-output">{content}</pre>}
+        <pre className="ai-output">{content || "No content"}</pre>
       </div>
     </div>
   );
@@ -185,7 +206,7 @@ const buildLayout = (
   focusedWindowId?: string,
   ai?: GoldenLayoutSurfaceProps["ai"],
   vault?: GoldenLayoutSurfaceProps["vault"],
-  workspaceRoot?: string | null
+  workspaceRoot?: string | null,
 ): LayoutConfig => {
   if (windows.length === 0) {
     return { root: undefined };
@@ -206,10 +227,10 @@ const buildLayout = (
           focused: window.id === focusedWindowId,
           ai,
           vault,
-          workspaceRoot
-        }
-      }
-    ]
+          workspaceRoot,
+        },
+      },
+    ],
   }));
 
   if (components.length === 1) {
@@ -219,8 +240,8 @@ const buildLayout = (
   return {
     root: {
       type: "row",
-      content: components
-    }
+      content: components,
+    },
   };
 };
 
@@ -229,13 +250,16 @@ export const GoldenLayoutSurface: React.FC<GoldenLayoutSurfaceProps> = ({
   focusedWindowId,
   ai,
   vault,
-  workspaceRoot
+  workspaceRoot,
 }) => {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const layoutRef = useRef<GoldenLayout | null>(null);
   const layoutSignature = useMemo(
-    () => windows.map((window) => `${window.id}:${window.type}:${window.title}`).join("|"),
-    [windows]
+    () =>
+      windows
+        .map((window) => `${window.id}:${window.type}:${window.title}`)
+        .join("|"),
+    [windows],
   );
 
   useEffect(() => {
@@ -259,7 +283,9 @@ export const GoldenLayoutSurface: React.FC<GoldenLayoutSurfaceProps> = ({
     register("filesystem");
     register("appembed");
     layoutRef.current = layout;
-    layout.loadLayout(buildLayout(windows, focusedWindowId, ai, vault, workspaceRoot));
+    layout.loadLayout(
+      buildLayout(windows, focusedWindowId, ai, vault, workspaceRoot),
+    );
 
     const resizeObserver = new ResizeObserver(() => {
       const rect = hostRef.current?.getBoundingClientRect();
@@ -289,7 +315,9 @@ export const GoldenLayoutSurface: React.FC<GoldenLayoutSurfaceProps> = ({
       if (windows.length === 0) {
         return;
       }
-      layout.loadLayout(buildLayout(windows, focusedWindowId, ai, vault, workspaceRoot));
+      layout.loadLayout(
+        buildLayout(windows, focusedWindowId, ai, vault, workspaceRoot),
+      );
     });
     return () => cancelAnimationFrame(handle);
   }, [layoutSignature]);
@@ -306,7 +334,7 @@ export const GoldenLayoutSurface: React.FC<GoldenLayoutSurfaceProps> = ({
           focused: window.id === focusedWindowId,
           ai,
           vault,
-          workspaceRoot
+          workspaceRoot,
         });
       }
     });

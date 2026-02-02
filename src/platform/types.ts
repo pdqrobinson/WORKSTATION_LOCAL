@@ -36,6 +36,8 @@ export interface Platform {
 
   /** Platform-specific app data directory. */
   getAppDataDir(): Promise<string>;
+  /** User's home directory. */
+  getHomeDir(): Promise<string>;
   /** Join path segments. */
   joinPath(...parts: string[]): Promise<string>;
 

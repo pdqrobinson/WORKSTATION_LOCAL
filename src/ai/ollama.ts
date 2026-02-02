@@ -1,3 +1,10 @@
+export type AiBackend = "glm" | "ollama";
+
+export const DEFAULT_MODELS: Record<AiBackend, string> = {
+  glm: "glm-4.7",
+  ollama: "glm4:9b",
+};
+
 export interface GLMChatMessage {
   role: "system" | "user" | "assistant";
   content: string;
@@ -10,6 +17,15 @@ export interface GLMChatResponse {
       content: string;
     };
   }>;
+  data?: {
+    message?: string;
+    choices?: Array<{
+      message: {
+        role: string;
+        content: string;
+      };
+    }>;
+  };
 }
 
 export interface OllamaChatMessage {
@@ -273,7 +289,12 @@ export const callGLMChat = async (
     }
 
     const data = (await response.json()) as GLMChatResponse;
-    const content = data.choices?.[0]?.message?.content;
+
+    // Try to get content from multiple possible formats
+    const content =
+      data.choices?.[0]?.message?.content || // Standard OpenAI format
+      data.message || // Direct message format
+      "";
 
     if (!content) {
       logError("Response missing content", data);

@@ -3,7 +3,7 @@
  * Only loaded when running inside the Tauri runtime.
  */
 
-import { appDataDir, join } from "@tauri-apps/api/path";
+import { appDataDir, homeDir, join } from "@tauri-apps/api/path";
 import {
   mkdir,
   readDir as tauriReadDir,
@@ -72,6 +72,10 @@ export const tauriPlatform: Platform = {
 
   getAppDataDir() {
     return appDataDir();
+  },
+
+  getHomeDir() {
+    return homeDir();
   },
 
   joinPath(...parts: string[]) {

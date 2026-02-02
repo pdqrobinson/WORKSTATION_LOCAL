@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { applyCommands } from "./ai/commands";
 import { runOperator } from "./ai/operator";
+import { AiBackend, DEFAULT_MODELS } from "./ai/ollama";
 import { CommandEnvelope } from "./ai/schema";
 import { GoldenLayoutSurface } from "./layout/GoldenLayoutSurface";
 import { createInitialWindows, toSnapshots } from "./state/windowRegistry";
@@ -40,6 +41,12 @@ const App: React.FC = () => {
   const [vaultIndex, setVaultIndex] = useState<VaultIndexEntry[]>([]);
   const [vaultDocs, setVaultDocs] = useState<VaultDoc[]>([]);
   const [workspaceRoot, setWorkspaceRoot] = useState<string | null>(null);
+  const [aiBackend, setAiBackend] = useState<AiBackend>(
+    () => (localStorage.getItem("ai-backend") as AiBackend) || "glm",
+  );
+  const [aiModel, setAiModel] = useState(
+    () => localStorage.getItem("ai-model") || DEFAULT_MODELS[((localStorage.getItem("ai-backend") as AiBackend) || "glm")],
+  );
 
   useEffect(() => {
     const loadDefault = async () => {
@@ -56,6 +63,19 @@ const App: React.FC = () => {
     loadDefault().catch(() => setWorkspaceRoot(null));
   }, []);
 
+  useEffect(() => {
+    localStorage.setItem("ai-backend", aiBackend);
+  }, [aiBackend]);
+
+  useEffect(() => {
+    localStorage.setItem("ai-model", aiModel);
+  }, [aiModel]);
+
+  const handleBackendChange = (next: AiBackend) => {
+    setAiBackend(next);
+    setAiModel(DEFAULT_MODELS[next]);
+  };
+
   const context = useMemo(
     () => ({
       windows: toSnapshots(windows),
@@ -67,11 +87,11 @@ const App: React.FC = () => {
         title: doc.title,
         tags: doc.tags,
         links: doc.links,
-        content: doc.content.slice(0, 2000)
+        content: doc.content.slice(0, 2000),
       })),
-      workspaceRoot
+      workspaceRoot,
     }),
-    [windows, recentCommands, vaultIndex, vaultDocs, workspaceRoot]
+    [windows, recentCommands, vaultIndex, vaultDocs, workspaceRoot],
   );
 
   const handleRun = async () => {
@@ -83,16 +103,20 @@ const App: React.FC = () => {
     setNotes([]);
 
     try {
-      const envelope = await runOperator(prompt, context);
+      const envelope = await runOperator(prompt, context, { backend: aiBackend, model: aiModel });
       setOutput(envelope);
       const result = applyCommands(windows, envelope.commands);
       setWindows(result.windows);
       setFocusedWindowId(result.focusedWindowId);
       setNotes(result.notes);
       setRecentCommands((current) =>
-        [...current, ...envelope.commands.map((cmd) => ({ action: cmd.action, windowId: cmd.windowId }))].slice(
-          -MAX_HISTORY
-        )
+        [
+          ...current,
+          ...envelope.commands.map((cmd) => ({
+            action: cmd.action,
+            windowId: cmd.windowId,
+          })),
+        ].slice(-MAX_HISTORY),
       );
     } catch (err) {
       setError((err as Error).message);
@@ -106,13 +130,22 @@ const App: React.FC = () => {
       type === "ai"
         ? "Operator"
         : type === "vault"
-        ? "Vault"
-        : type === "yazi"
-        ? "Yazi"
-        : `${type} window`;
+          ? "Vault"
+          : type === "yazi"
+            ? "Yazi"
+            : `${type} window`;
     setWindows((current) => [
       ...current,
-      { id: (typeof crypto.randomUUID === "function") ? crypto.randomUUID() : Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, "0")).join(""), type, title }
+      {
+        id:
+          typeof crypto.randomUUID === "function"
+            ? crypto.randomUUID()
+            : Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) =>
+                b.toString(16).padStart(2, "0"),
+              ).join(""),
+        type,
+        title,
+      },
     ]);
   };
 
@@ -121,6 +154,36 @@ const App: React.FC = () => {
     if (next && next.trim()) {
       localStorage.setItem("workspaceRoot", next.trim());
       setWorkspaceRoot(next.trim());
+    }
+  };
+
+  const handleContentChange = (windowId: string, html: string) => {
+    setWindows((current) =>
+      current.map((w) => (w.id === windowId ? { ...w, content: html } : w)),
+    );
+  };
+
+  const handleOpenFile = async (path: string) => {
+    try {
+      const p = platform();
+      const content = await p.readTextFile(path);
+      const filename = path.split("/").pop() || path;
+      setWindows((current) => [
+        ...current,
+        {
+          id:
+            typeof crypto.randomUUID === "function"
+              ? crypto.randomUUID()
+              : Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) =>
+                  b.toString(16).padStart(2, "0"),
+                ).join(""),
+          type: "editor",
+          title: filename,
+          content,
+        },
+      ]);
+    } catch (err) {
+      console.error("Failed to open file:", err);
     }
   };
 
@@ -145,17 +208,23 @@ const App: React.FC = () => {
       busy,
       error,
       notes,
-      output
+      output,
+      backend: aiBackend,
+      model: aiModel,
+      onBackendChange: handleBackendChange,
+      onModelChange: setAiModel,
+      onOpenFile: handleOpenFile,
+      onContentChange: handleContentChange,
     }),
-    [prompt, busy, error, notes, output]
+    [prompt, busy, error, notes, output, aiBackend, aiModel]
   );
 
   const vaultProps = useMemo(
     () => ({
       onIndexChange: setVaultIndex,
-      onDocsChange: setVaultDocs
+      onDocsChange: setVaultDocs,
     }),
-    []
+    [],
   );
 
   return (
@@ -178,7 +247,10 @@ const App: React.FC = () => {
           <button onClick={() => handleAddWindow("vault")}>+ Vault</button>
           <button onClick={() => handleAddWindow("ai")}>+ AI</button>
           <button onClick={() => handleAddWindow("yazi")}>+ Yazi</button>
-          <button onClick={() => handleAddWindow("terminal")}>+ Terminal</button>
+          <button onClick={() => handleAddWindow("terminal")}>
+            + Terminal
+          </button>
+          <button onClick={() => handleAddWindow("filesystem")}>+ Files</button>
           <button onClick={() => handleAddWindow("doc")}>+ Doc</button>
           <button onClick={() => handleAddWindow("editor")}>+ Editor</button>
         </div>

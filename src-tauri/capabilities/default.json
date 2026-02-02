@@ -5,6 +5,7 @@
   "webviews": ["main"],
   "permissions": [
     "core:default",
+    "core:path:default",
     "core:webview:allow-create-webview-window",
     "core:webview:allow-create-webview",
     "core:webview:allow-set-webview-position",
@@ -20,6 +21,34 @@
       "allow": [
         {
           "path": "$APPDATA/ai-workstation/**"
+        },
+        {
+          "path": "$HOME"
+        },
+        {
+          "path": "$HOME/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-read-text-file",
+      "allow": [
+        {
+          "path": "$APPDATA/ai-workstation/**"
+        },
+        {
+          "path": "$HOME/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-read-dir",
+      "allow": [
+        {
+          "path": "$HOME"
+        },
+        {
+          "path": "$HOME/**"
         }
       ]
     },
@@ -44,6 +73,9 @@
       "allow": [
         {
           "path": "$APPDATA/ai-workstation/**"
+        },
+        {
+          "path": "$HOME/**"
         }
       ]
     }

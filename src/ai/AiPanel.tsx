@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { CommandEnvelope } from "./schema";
-import { checkGLMConnection, setGLMApiKey } from "./ollama";
+import { AiBackend, checkGLMConnection, checkOllamaConnection, setGLMApiKey } from "./ollama";
 
 interface AiPanelProps {
   prompt: string;
@@ -10,6 +10,10 @@ interface AiPanelProps {
   error: string | null;
   notes: string[];
   output: CommandEnvelope | null;
+  backend: AiBackend;
+  model: string;
+  onBackendChange: (backend: AiBackend) => void;
+  onModelChange: (model: string) => void;
 }
 
 interface DiagnosticsStatus {
@@ -35,6 +39,10 @@ export const AiPanel: React.FC<AiPanelProps> = ({
   error,
   notes,
   output,
+  backend,
+  model,
+  onBackendChange,
+  onModelChange,
 }) => {
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [diagnostics, setDiagnostics] = useState<DiagnosticsStatus | null>(
@@ -48,18 +56,28 @@ export const AiPanel: React.FC<AiPanelProps> = ({
     setCheckingDiagnostics(true);
     setShowDiagnostics(true);
     try {
-      if (apiKey.trim()) {
-        setGLMApiKey(apiKey.trim());
+      if (backend === "glm") {
+        if (apiKey.trim()) {
+          setGLMApiKey(apiKey.trim());
+        }
+        const result = await checkGLMConnection({ model });
+        setDiagnostics({
+          connected: result.connected,
+          modelAvailable: result.modelAvailable,
+          model,
+          version: result.version ?? undefined,
+          error: result.error,
+        });
+      } else {
+        const result = await checkOllamaConnection({ model });
+        setDiagnostics({
+          connected: result.connected,
+          modelAvailable: result.modelAvailable,
+          model,
+          version: result.version ?? undefined,
+          error: result.error,
+        });
       }
-      const result = await checkGLMConnection();
-      setDiagnostics({
-        connected: result.connected,
-        modelAvailable: result.modelAvailable,
-        model: "GLM 4.7",
-        version: result.version ?? undefined,
-        error: result.error,
-      });
-      console.log("Diagnostics result:", result);
     } catch (err) {
       setDiagnostics({
         connected: false,
@@ -92,32 +110,49 @@ export const AiPanel: React.FC<AiPanelProps> = ({
       <div className="ai-header">
         <div>
           <h2>Operator</h2>
-          <p>Model: GLM 4.7</p>
-          {showApiKey ? (
-            <div className="api-key-container">
-              <input
-                type="password"
-                className="api-key-input"
-                placeholder="Enter z.ai API key..."
-                value={apiKey}
-                onChange={(e) => handleApiKeyChange(e.target.value)}
-              />
+          <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
+            <select
+              className="backend-select"
+              value={backend}
+              onChange={(e) => onBackendChange(e.target.value as AiBackend)}
+            >
+              <option value="glm">GLM (z.ai)</option>
+              <option value="ollama">Ollama (local)</option>
+            </select>
+            <input
+              className="model-input"
+              value={model}
+              onChange={(e) => onModelChange(e.target.value)}
+              placeholder="Model name..."
+            />
+          </div>
+          {backend === "glm" && (
+            showApiKey ? (
+              <div className="api-key-container">
+                <input
+                  type="password"
+                  className="api-key-input"
+                  placeholder="Enter z.ai API key..."
+                  value={apiKey}
+                  onChange={(e) => handleApiKeyChange(e.target.value)}
+                />
+                <button
+                  className="api-key-toggle"
+                  onClick={() => setShowApiKey(false)}
+                  type="button"
+                >
+                  ✓
+                </button>
+              </div>
+            ) : (
               <button
                 className="api-key-toggle"
-                onClick={() => setShowApiKey(false)}
+                onClick={() => setShowApiKey(true)}
                 type="button"
               >
-                ✓
+                Set API Key
               </button>
-            </div>
-          ) : (
-            <button
-              className="api-key-toggle"
-              onClick={() => setShowApiKey(true)}
-              type="button"
-            >
-              🔑 Set API Key
-            </button>
+            )
           )}
         </div>
         <button
@@ -125,7 +160,7 @@ export const AiPanel: React.FC<AiPanelProps> = ({
           disabled={checkingDiagnostics}
           className="diagnostics-button"
         >
-          {checkingDiagnostics ? "Checking..." : "🔍 Check Connection"}
+          {checkingDiagnostics ? "Checking..." : "Check Connection"}
         </button>
       </div>
       <textarea
@@ -197,7 +232,7 @@ export const AiPanel: React.FC<AiPanelProps> = ({
           <h3>Connection Status</h3>
           <ul>
             <li>
-              <strong>GLM API Connected:</strong>{" "}
+              <strong>{backend === "glm" ? "GLM API" : "Ollama"} Connected:</strong>{" "}
               {diagnostics.connected ? (
                 <span className="status-success">✅ Yes</span>
               ) : (

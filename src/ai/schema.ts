@@ -19,7 +19,9 @@ export type CommandAction =
   | "close_window"
   | "list_windows"
   | "write_to_window"
-  | "reflow_layout";
+  | "reflow_layout"
+  | "query_windows"
+  | "get_content";
 
 export interface Command {
   action: CommandAction;
@@ -42,7 +44,7 @@ export const isCommandAction = (value: unknown): value is CommandAction =>
     "close_window",
     "list_windows",
     "write_to_window",
-    "reflow_layout"
+    "reflow_layout",
   ].includes(value);
 
 export const isWindowType = (value: unknown): value is WindowType =>
@@ -59,7 +61,7 @@ export const isWindowType = (value: unknown): value is WindowType =>
     "downloads",
     "memos",
     "filesystem",
-    "appembed"
+    "appembed",
   ].includes(value);
 
 export const validateCommandEnvelope = (input: unknown): CommandEnvelope => {

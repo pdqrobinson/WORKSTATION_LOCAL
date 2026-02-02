@@ -1,5 +1,24 @@
-import { callOllamaChat } from "./ollama";
+import {
+  AiBackend,
+  callGLMChat,
+  callOllamaChat,
+  checkGLMConnection,
+  checkOllamaConnection,
+} from "./ollama";
 import { validateCommandEnvelope, CommandEnvelope } from "./schema";
+
+export interface OperatorBackendConfig {
+  backend: AiBackend;
+  model: string;
+}
+
+const log = (message: string, ...args: unknown[]): void => {
+  console.log(`[Operator] ${message}`, ...args);
+};
+
+const logError = (message: string, ...args: unknown[]): void => {
+  console.error(`[Operator ERROR] ${message}`, ...args);
+};
 
 export interface OperatorContext {
   windows: Array<{ id: string; type: string; title: string }>;
@@ -23,7 +42,7 @@ export interface OperatorContext {
   workspaceRoot: string | null;
 }
 
-const systemPrompt = `You are the Local Operator AI for a desktop AI workstation.
+const systemPrompt = `You are an AI Operator for a desktop workstation. You can control windows, manage files, and execute tasks using natural language.
 Output ONLY valid JSON following this schema:
 {
   "commands": [
@@ -51,25 +70,82 @@ const buildUserPrompt = (message: string, context: OperatorContext): string => {
     `Recent commands: ${JSON.stringify(context.recentCommands)}`,
     `Vault index: ${JSON.stringify(context.vaultIndex)}`,
     `Vault docs: ${JSON.stringify(context.vaultDocs)}`,
-    `Workspace root: ${context.workspaceRoot ?? "unset"}`
+    `Workspace root: ${context.workspaceRoot ?? "unset"}`,
   ].join("\n");
 };
 
 export const runOperator = async (
   message: string,
-  context: OperatorContext
+  context: OperatorContext,
+  config: OperatorBackendConfig = { backend: "glm", model: "glm-4.7" },
 ): Promise<CommandEnvelope> => {
-  const content = await callOllamaChat([
-    { role: "system", content: systemPrompt },
-    { role: "user", content: buildUserPrompt(message, context) }
-  ]);
+  log("Running operator", {
+    backend: config.backend,
+    model: config.model,
+    messageLength: message.length,
+    windowCount: context.windows.length,
+  });
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(content);
-  } catch (error) {
-    throw new Error(`Operator output is not valid JSON: ${(error as Error).message}`);
+  // Check diagnostics first
+  if (config.backend === "glm") {
+    const diagnostics = await checkGLMConnection({ model: config.model });
+    if (!diagnostics.connected) {
+      throw new Error(
+        `GLM API is not accessible. ${diagnostics.error || "Please check your API key and connection"}`,
+      );
+    }
+    if (!diagnostics.modelAvailable) {
+      throw new Error(
+        `GLM model is not available. ${diagnostics.error || "Unknown error"}`,
+      );
+    }
+  } else {
+    const diagnostics = await checkOllamaConnection({ model: config.model });
+    if (!diagnostics.connected) {
+      throw new Error(
+        `Ollama is not accessible. ${diagnostics.error || "Please check that Ollama is running"}`,
+      );
+    }
+    if (!diagnostics.modelAvailable) {
+      throw new Error(
+        `Ollama model '${config.model}' is not available. ${diagnostics.error || "Unknown error"}`,
+      );
+    }
   }
 
-  return validateCommandEnvelope(parsed);
+  const messages = [
+    { role: "system" as const, content: systemPrompt },
+    { role: "user" as const, content: buildUserPrompt(message, context) },
+  ];
+
+  try {
+    const content =
+      config.backend === "glm"
+        ? await callGLMChat(messages, { model: config.model })
+        : await callOllamaChat(messages, { model: config.model });
+
+    log("Received response", { backend: config.backend, contentLength: content.length });
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(content);
+    } catch (error) {
+      logError("Failed to parse JSON", {
+        rawContent: content,
+        error: (error as Error).message,
+      });
+      throw new Error(
+        `Operator output is not valid JSON: ${(error as Error).message}. Raw output: ${content.substring(0, 200)}`,
+      );
+    }
+
+    return validateCommandEnvelope(parsed);
+  } catch (error) {
+    if (error instanceof Error) {
+      logError("Operator failed", error.message);
+      throw error;
+    }
+    throw new Error(`Unknown error in operator: ${String(error)}`);
+  }
 };
+

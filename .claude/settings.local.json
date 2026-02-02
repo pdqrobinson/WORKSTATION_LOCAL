@@ -6,7 +6,9 @@
       "Bash(npx vite build)",
       "Bash(npx --package=vite@5.4.8 vite build:*)",
       "Bash(npx tsc:*)",
-      "Bash(npm install)"
+      "Bash(npm install)",
+      "WebSearch",
+      "Bash(npm install:*)"
     ]
   }
 }
