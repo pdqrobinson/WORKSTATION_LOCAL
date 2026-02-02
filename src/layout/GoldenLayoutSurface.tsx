@@ -292,7 +292,7 @@ export const GoldenLayoutSurface: React.FC<GoldenLayoutSurfaceProps> = ({
       layout.loadLayout(buildLayout(windows, focusedWindowId, ai, vault, workspaceRoot));
     });
     return () => cancelAnimationFrame(handle);
-  }, [layoutSignature, focusedWindowId, ai, vault, workspaceRoot]);
+  }, [layoutSignature]);
 
   useEffect(() => {
     windows.forEach((window) => {
